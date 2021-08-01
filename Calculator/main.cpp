@@ -489,7 +489,7 @@ double evaluateExpression(const std::string& expression){
             function.argumentNames.push_back(i->token);
         }
         std::vector<Token> rightSide = tokenized;
-        rightSide.erase(rightSide.begin(), find(rightSide.begin(), rightSide.end(), Token{TokenType::Operator, ":"})+1);
+        rightSide.erase(rightSide.begin(), find(rightSide.begin(), rightSide.end(), Token{TokenType::Operator, "="})+1);
         function.funcExpression = convertToPostfix(rightSide);
         if (defaultFunctions_arg1.find(tokenized[0].token) == defaultFunctions_arg1.end() && defaultFunctions_arg2.find(tokenized[0].token) == defaultFunctions_arg2.end() && defaultFunctions_arg3.find(tokenized[0].token) == defaultFunctions_arg3.end())
             customFunctions[tokenized[0].token] = function;
