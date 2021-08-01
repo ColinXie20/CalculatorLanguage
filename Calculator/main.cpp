@@ -61,10 +61,12 @@ struct Function{
 int getPrecedence(const Token& op){
     assert (op.type == TokenType::Operator);
     const static std::map<std::string, int> s_precedence{
-        {"<", 1}, {">", 1}, {"<=", 1}, {">=", 1}, {"==", 1}, {"&&", 1}, {"||", 1},
-        {"+", 2}, {"-", 2},
-        {"*", 3}, {"/", 3}, {"%", 3},
-        {"^", 4},
+        {"?", 0},
+        {":", 1},
+        {"<", 2}, {">", 2}, {"<=", 2}, {">=", 2}, {"==", 2}, {"&&", 2}, {"||", 2},
+        {"+", 3}, {"-", 3},
+        {"*", 4}, {"/", 4}, {"%", 4},
+        {"^", 5},
     };
     auto it = s_precedence.find(op.token);
     if (it == s_precedence.end())
@@ -77,7 +79,7 @@ bool isDigit(char c){
 }
 
 bool isOperator(char c){
-    return c == '%' || c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '<' || c == '>' || c == '=' || c == '&' || c == '|' || c == ':' || c == ',';
+    return c == '%' || c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '<' || c == '>' || c == '=' || c == '&' || c == '|' || c == '?' || c == ':' || c == ',';
 }
 
 bool isIdentifier(char c){
@@ -353,6 +355,7 @@ std::vector<Token> convertToPostfix(const std::vector<Token>& tokens_, bool func
 //Takes postfix notation expression as a vector of tokens
 double evaluateExpression(const std::vector<Token>& tokens, const std::map<std::string, double>& variables_ = variables){
     std::stack<double> operandStack;
+    std::stack<double> ternaryOptionStack;
     for (const Token& token : tokens){
         if (token.type == TokenType::Number)
             operandStack.push(std::atof(token.token.c_str()));
@@ -418,13 +421,21 @@ double evaluateExpression(const std::vector<Token>& tokens, const std::map<std::
                 throw Error{std::string("[Error]: Unrecognized identifier '")+token.token+"'"};
         }
         else if (token.type == TokenType::Operator){
-            if (operandStack.size() < 2){
-                throw Error{std::string("[Error]: Operator does not have 2 operands: ")+token.token};
+            double a, b;
+            if ((operandStack.size() < 2 && token.token != "?") || (operandStack.size() < 1 && token.token == "?")){
+                throw Error{std::string("[Error]: Operator does not have enough operands: ")+token.token};
             }
-            double b = operandStack.top();
-            operandStack.pop();
-            double a = operandStack.top();
-            operandStack.pop();
+            else if (token.token == "?"){
+                a = operandStack.top();
+                operandStack.pop();
+                b = -1;
+            }
+            else{
+                b = operandStack.top();
+                operandStack.pop();
+                a = operandStack.top();
+                operandStack.pop();
+            }
             if (token.token == "%")
                 operandStack.push(fmod(a, b));
             else if (token.token == "+")
@@ -454,6 +465,19 @@ double evaluateExpression(const std::vector<Token>& tokens, const std::map<std::
                     throw Error{std::string("[Error]: ")+std::to_string(a)+"^"+std::to_string(b)+" is not a number"};
                 operandStack.push(pow(a, b));
             }
+            else if (token.token == ":"){
+                ternaryOptionStack.push(a);
+                ternaryOptionStack.push(b);
+            }
+            else if (token.token == "?"){
+                if (ternaryOptionStack.size() < 2)
+                    throw Error{"[Error]: Ternary operator ? used without operator :"};
+                double op2 = ternaryOptionStack.top();
+                ternaryOptionStack.pop();
+                double op1 = ternaryOptionStack.top();
+                ternaryOptionStack.pop();
+                operandStack.push(a?op1:op2);
+            }
             else if (token.token != ","){
                 throw Error{std::string("[Error]: Invalid operator: ")+token.token};
             }
@@ -461,6 +485,8 @@ double evaluateExpression(const std::vector<Token>& tokens, const std::map<std::
     }
     if (operandStack.size() > 1)
         throw Error{"[Error]: Unused operand(s)"};
+    else if (ternaryOptionStack.size() > 0)
+        throw Error{"[Error]: : operator used without ternary operator ?"};
     return operandStack.top();
 }
 
@@ -468,33 +494,33 @@ double evaluateExpression(const std::vector<Token>& tokens, const std::map<std::
 double evaluateExpression(const std::string& expression){
     std::vector<Token> tokenized = tokenize(expression);
     if (auto it = std::find(tokenized.begin(), tokenized.end(), Token{TokenType::Operator, "="}); it != tokenized.end()){
-        if (it != tokenized.begin()+1)
-            throw Error{"[Error]: Only one token allowed on left side of assignment operator"};
-        std::vector<Token> rightSide = tokenized;
-        rightSide.erase(rightSide.begin(), rightSide.begin()+2);
-        double value = evaluateExpression(convertToPostfix(rightSide));
-        if (constants.find(tokenized[0].token) == constants.end())
-            variables[tokenized[0].token] = value;
-    }
-    else if (auto it = std::find(tokenized.begin(), tokenized.end(), Token{TokenType::Operator, ":"}); it != tokenized.end()){
-        Function function{0, std::vector<std::string>{}, std::vector<Token>{}};
-        if (tokenized[0].type != TokenType::Identifier || tokenized[1].token != "(" || (it-1)->token != ")")
-            throw Error{"[Error]: Incorrect function syntax"};
-        for (auto i=tokenized.begin()+2; i<it-1; i += 2){
-            if (i->type != TokenType::Identifier)
-                throw Error{std::string("[Error]: Function parameter '")+i->token+"' is not a valid identifier"};
-            else if (i != tokenized.begin()+2 && (i-1)->token != ",")
-                throw Error{"[Error]: Missing comma in function parameter list"};
-            ++function.numArguments;
-            function.argumentNames.push_back(i->token);
+        if (it == tokenized.begin()+1){
+            std::vector<Token> rightSide = tokenized;
+            rightSide.erase(rightSide.begin(), rightSide.begin()+2);
+            double value = evaluateExpression(convertToPostfix(rightSide));
+            if (constants.find(tokenized[0].token) == constants.end())
+                variables[tokenized[0].token] = value;
         }
-        std::vector<Token> rightSide = tokenized;
-        rightSide.erase(rightSide.begin(), find(rightSide.begin(), rightSide.end(), Token{TokenType::Operator, "="})+1);
-        function.funcExpression = convertToPostfix(rightSide);
-        if (defaultFunctions_arg1.find(tokenized[0].token) == defaultFunctions_arg1.end() && defaultFunctions_arg2.find(tokenized[0].token) == defaultFunctions_arg2.end() && defaultFunctions_arg3.find(tokenized[0].token) == defaultFunctions_arg3.end())
-            customFunctions[tokenized[0].token] = function;
-        else
-            throw Error{std::string("[Error]: Cannot overwrite default function '")+tokenized[0].token+"'"};
+        else{
+            Function function{0, std::vector<std::string>{}, std::vector<Token>{}};
+            if (tokenized[0].type != TokenType::Identifier || tokenized[1].token != "(" || (it-1)->token != ")")
+                throw Error{"[Error]: Incorrect function syntax"};
+            for (auto i=tokenized.begin()+2; i<it-1; i += 2){
+                if (i->type != TokenType::Identifier)
+                    throw Error{std::string("[Error]: Function parameter '")+i->token+"' is not a valid identifier"};
+                else if (i != tokenized.begin()+2 && (i-1)->token != ",")
+                    throw Error{"[Error]: Missing comma in function parameter list"};
+                ++function.numArguments;
+                function.argumentNames.push_back(i->token);
+            }
+            std::vector<Token> rightSide = tokenized;
+            rightSide.erase(rightSide.begin(), find(rightSide.begin(), rightSide.end(), Token{TokenType::Operator, "="})+1);
+            function.funcExpression = convertToPostfix(rightSide);
+            if (defaultFunctions_arg1.find(tokenized[0].token) == defaultFunctions_arg1.end() && defaultFunctions_arg2.find(tokenized[0].token) == defaultFunctions_arg2.end() && defaultFunctions_arg3.find(tokenized[0].token) == defaultFunctions_arg3.end())
+                customFunctions[tokenized[0].token] = function;
+            else
+                throw Error{std::string("[Error]: Cannot overwrite default function '")+tokenized[0].token+"'"};
+        }
     }
     else
         return evaluateExpression(convertToPostfix(tokenized, true));
@@ -510,7 +536,7 @@ void evaluateFile(const std::string& filePath){
         getline(fin, line);
         if (!line.empty()){
             double result = evaluateExpression(line);
-            if (std::find(line.begin(), line.end(), '=') == line.end() && std::find(line.begin(), line.end(), ':') == line.end())
+            if (std::find(line.begin(), line.end(), '=') == line.end())
                 std::cout << result << "\n";
         }
     }
@@ -603,14 +629,16 @@ void test_evaluate(){
                 1.0);
     expect_near(evaluateExpression("sin(+pi/2)"),
                 1.0);
+    expect_near(evaluateExpression("1 ? 1 : 0"),
+                1.0);
 }
 
 void test_varsAndFuncs(){
     evaluateExpression("a = 1");
     evaluateExpression("b = 2");
-    evaluateExpression("multiplyByAHundred(n): n*100");
-    evaluateExpression("addAThousand(n): n+1000");
-    evaluateExpression("sumOfFive(a,b,c,d,e): a+b+c+d+e");
+    evaluateExpression("multiplyByAHundred(n) = n*100");
+    evaluateExpression("addAThousand(n) = n+1000");
+    evaluateExpression("sumOfFive(a,b,c,d,e) = a+b+c+d+e");
     expect_near(evaluateExpression("a+b"),
                 3.0);
     expect_near(evaluateExpression("a-b"),
