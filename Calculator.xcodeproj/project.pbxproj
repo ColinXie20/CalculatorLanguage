@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		4D0FDD05268B8B8400DD41D5 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D0FDD04268B8B8400DD41D5 /* main.cpp */; };
+		4D648A2D26B7465E00E7651F /* tests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D648A2B26B7465E00E7651F /* tests.cpp */; };
+		4D648A3026B7488000E7651F /* calculator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4D648A2E26B7488000E7651F /* calculator.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,10 @@
 /* Begin PBXFileReference section */
 		4D0FDD01268B8B8400DD41D5 /* Calculator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Calculator; sourceTree = BUILT_PRODUCTS_DIR; };
 		4D0FDD04268B8B8400DD41D5 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		4D648A2B26B7465E00E7651F /* tests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tests.cpp; sourceTree = "<group>"; };
+		4D648A2C26B7465E00E7651F /* tests.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = tests.hpp; sourceTree = "<group>"; };
+		4D648A2E26B7488000E7651F /* calculator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = calculator.cpp; sourceTree = "<group>"; };
+		4D648A2F26B7488000E7651F /* calculator.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = calculator.hpp; sourceTree = "<group>"; };
 		4D7ADB6026A88605007CF097 /* test.expr */ = {isa = PBXFileReference; lastKnownFileType = text; path = test.expr; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -59,6 +65,10 @@
 			isa = PBXGroup;
 			children = (
 				4D0FDD04268B8B8400DD41D5 /* main.cpp */,
+				4D648A2E26B7488000E7651F /* calculator.cpp */,
+				4D648A2F26B7488000E7651F /* calculator.hpp */,
+				4D648A2B26B7465E00E7651F /* tests.cpp */,
+				4D648A2C26B7465E00E7651F /* tests.hpp */,
 				4D7ADB6026A88605007CF097 /* test.expr */,
 			);
 			path = Calculator;
@@ -121,6 +131,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D0FDD05268B8B8400DD41D5 /* main.cpp in Sources */,
+				4D648A2D26B7465E00E7651F /* tests.cpp in Sources */,
+				4D648A3026B7488000E7651F /* calculator.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

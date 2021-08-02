@@ -1,1 +1,2 @@
-1?0:1
+degreesToRadians(d) = d * ((2*pi)/360)
+0? 1000*1.013 : sin(degreesToRadians(90))
